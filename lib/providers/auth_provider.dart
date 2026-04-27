@@ -1,28 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
   FirebaseAuth? _auth;
   User? _user;
-  AppUser? _appUser;
   bool _isLoading = false;
-  bool _isRoleLoading = false;
-
   bool _isDemoAuthenticated = false;
 
   User? get user => _user;
-  AppUser? get appUser => _appUser;
   bool get isLoading => _isLoading;
-  bool get isRoleLoading => _isRoleLoading;
   bool get isAuthenticated => _user != null || _isDemoAuthenticated;
 
-  /// Secure admin check: only verified Firebase users with role='admin' in Firestore
-  bool get isAdmin {
-    if (_user == null) return false;
-    return _appUser?.isAdmin ?? false;
-  }
+  bool get isAdmin => false;
 
   bool get isDemoMode {
     if (_auth == null) return true;
@@ -42,54 +31,11 @@ class AuthProvider with ChangeNotifier {
       _auth = FirebaseAuth.instance;
       _auth!.authStateChanges().listen((User? user) async {
         _user = user;
-        if (user != null) {
-          await loadUserRole();
-        } else {
-          _appUser = null;
-        }
         notifyListeners();
       });
     } catch (e) {
       debugPrint('Auth initialization error: $e');
       _user = null;
-      _appUser = null;
-    }
-  }
-
-  /// Load user role from Firestore. Creates default 'client' role if missing.
-  Future<void> loadUserRole() async {
-    if (_user == null) return;
-    _isRoleLoading = true;
-    notifyListeners();
-
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(_user!.uid)
-          .get();
-
-      if (doc.exists) {
-        _appUser = AppUser.fromFirestore(doc);
-      } else {
-        // Create default user document if it doesn't exist
-        _appUser = AppUser(
-          id: _user!.uid,
-          email: _user!.email ?? '',
-          role: 'client',
-          displayName: _user!.displayName,
-          createdAt: DateTime.now(),
-        );
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(_user!.uid)
-            .set(_appUser!.toFirestore());
-      }
-    } catch (e) {
-      debugPrint('Error loading user role: $e');
-      _appUser = null;
-    } finally {
-      _isRoleLoading = false;
-      notifyListeners();
     }
   }
 
@@ -106,26 +52,10 @@ class AuthProvider with ChangeNotifier {
         return null;
       }
 
-      final cred = await _auth!.createUserWithEmailAndPassword(
+      await _auth!.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      // Create user document with 'client' role
-      if (cred.user != null) {
-        final newUser = AppUser(
-          id: cred.user!.uid,
-          email: email,
-          role: 'client',
-          displayName: cred.user!.displayName,
-          createdAt: DateTime.now(),
-        );
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(cred.user!.uid)
-            .set(newUser.toFirestore());
-        _appUser = newUser;
-      }
 
       _isLoading = false;
       notifyListeners();
@@ -173,7 +103,6 @@ class AuthProvider with ChangeNotifier {
 
       await _auth!.signInWithEmailAndPassword(email: email, password: password);
 
-      // loadUserRole will be triggered by authStateChanges listener
       _isLoading = false;
       notifyListeners();
       return null;
@@ -211,14 +140,12 @@ class AuthProvider with ChangeNotifier {
     try {
       if (_isDemoAuthenticated) {
         _isDemoAuthenticated = false;
-        _appUser = null;
         notifyListeners();
         return;
       }
       if (_auth != null) {
         await _auth!.signOut();
       }
-      _appUser = null;
     } catch (e) {
       debugPrint('Error signing out: $e');
     }

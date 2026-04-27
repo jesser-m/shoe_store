@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
-import './admin/admin_dashbord_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -15,8 +14,6 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
-    final user = auth.appUser;
-    final isAdmin = auth.isAdmin;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FF),
@@ -63,7 +60,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    user?.displayName ?? 'Utilisateur',
+                    auth.user?.displayName ?? 'Utilisateur',
                     style: GoogleFonts.inter(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -72,52 +69,10 @@ class ProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user?.email ?? auth.user?.email ?? '',
+                    auth.user?.email ?? '',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       color: Colors.white.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Role badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isAdmin
-                          ? Colors.deepPurpleAccent.withValues(alpha: 0.3)
-                          : Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isAdmin
-                            ? Colors.deepPurpleAccent
-                            : Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isAdmin ? Icons.verified_user : Icons.person_outline,
-                          size: 14,
-                          color: isAdmin
-                              ? Colors.deepPurpleAccent
-                              : Colors.white70,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          isAdmin ? 'Administrateur' : 'Client',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isAdmin
-                                ? Colors.deepPurpleAccent
-                                : Colors.white70,
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -125,11 +80,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             // Account Info Card
-            _buildInfoCard(context, user, auth),
+            _buildInfoCard(context, auth),
             const SizedBox(height: 24),
-            // Admin Access Button
-            if (isAdmin) _buildAdminButton(context),
-            const SizedBox(height: 16),
             // Logout Button
             SizedBox(
               width: double.infinity,
@@ -161,7 +113,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, user, AuthProvider auth) {
+  Widget _buildInfoCard(BuildContext context, AuthProvider auth) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -179,7 +131,7 @@ class ProfileScreen extends StatelessWidget {
           _buildInfoTile(
             Icons.email_outlined,
             'Email',
-            user?.email ?? auth.user?.email ?? 'Non disponible',
+            auth.user?.email ?? 'Non disponible',
           ),
           const Divider(height: 1, indent: 56),
           _buildInfoTile(
@@ -196,14 +148,6 @@ class ProfileScreen extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-          ),
-          const Divider(height: 1, indent: 56),
-          _buildInfoTile(
-            Icons.calendar_today_outlined,
-            'Membre depuis',
-            user?.createdAt != null
-                ? '${user.createdAt.day.toString().padLeft(2, '0')}/${user.createdAt.month.toString().padLeft(2, '0')}/${user.createdAt.year}'
-                : 'Non disponible',
           ),
         ],
       ),
@@ -251,37 +195,6 @@ class ProfileScreen extends StatelessWidget {
           ),
           if (trailing != null) trailing,
         ],
-      ),
-    );
-  }
-
-  Widget _buildAdminButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
-          );
-        },
-        icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
-        label: Text(
-          'Panneau d\'administration',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 4,
-          shadowColor: Colors.deepPurple.withValues(alpha: 0.4),
-        ),
       ),
     );
   }

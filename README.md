@@ -10,6 +10,7 @@ A professional Flutter e-commerce application for shoe shopping with modern UI a
 - **Shopping Cart**: Add/remove items, quantity management, persistent storage
 - **Favorites**: Save favorite products with local persistence
 - **User Authentication**: Firebase Auth with login/signup
+- **Admin Access**: Professional admin login, route guard, and dashboard
 - **Bottom Navigation**: Seamless navigation between screens
 - **Material Design 3**: Modern, professional UI
 

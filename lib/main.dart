@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import './firebase_options.dart';
 import './models/product.dart';
 import './widgets/product_card.dart';
 import './widgets/shimmer_loading.dart';
@@ -14,36 +12,31 @@ import './providers/products_provider.dart';
 import './providers/order_provider.dart';
 import './providers/category_provider.dart';
 import './providers/payment_provider.dart';
+import './providers/settings_provider.dart';
 import './screens/cart_screen.dart';
 import './screens/favorites_screen.dart';
 import './screens/profile_screen.dart';
 import './screens/login_screen.dart';
 import './config/stripe_config.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import './l10n/app_localizations.dart';
 
 // Only import Stripe for mobile platforms
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (e) {
-    // Firebase initialization may fail on web without proper config
-    // This is okay for demo purposes
-    debugPrint('Firebase initialization failed: $e');
-  }
 
-  // Only initialize Stripe on mobile platforms, not on web
-  if (!kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.android)) {
+  // Initialize Stripe (Mobile only)
+  if (!kIsWeb) {
     Stripe.publishableKey = StripeConfig.publishableKey;
-    try {
-      await Stripe.instance.applySettings();
-    } catch (e) {
-      debugPrint('Stripe initialization failed: $e');
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        await Stripe.instance.applySettings();
+      } catch (e) {
+        debugPrint('Stripe applySettings failed: $e');
+      }
     }
   }
 
@@ -57,6 +50,7 @@ void main() async {
         ChangeNotifierProvider(create: (ctx) => PaymentProvider()),
         ChangeNotifierProvider(create: (ctx) => OrderProvider()),
         ChangeNotifierProvider(create: (ctx) => CategoryProvider()),
+        ChangeNotifierProvider(create: (ctx) => SettingsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -68,20 +62,48 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Shoe Store',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
-      home: Consumer<AuthProvider>(
-        builder: (ctx, auth, _) {
-          return auth.isAuthenticated
-              ? const MainScreen()
-              : const LoginScreen();
-        },
-      ),
+    return Consumer<SettingsProvider>(
+      builder: (ctx, settings, _) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Shoe Store',
+          themeMode: settings.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.light,
+            ),
+            useMaterial3: true,
+          ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+          ),
+          locale: settings.locale,
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('fr', 'FR'),
+            Locale('es', 'ES'),
+            Locale('ar', 'AE'),
+          ],
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          home: Consumer<AuthProvider>(
+            builder: (ctx, auth, _) {
+              return auth.isAuthenticated
+                  ? const MainScreen()
+                  : const LoginScreen();
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -183,7 +205,7 @@ class _MainScreenState extends State<MainScreen>
                   child: const Icon(Icons.home),
                 ),
               ),
-              label: 'Accueil',
+              label: context.tr('home'),
             ),
             BottomNavigationBarItem(
               icon: AnimatedBuilder(
@@ -193,7 +215,7 @@ class _MainScreenState extends State<MainScreen>
                   child: const Icon(Icons.favorite),
                 ),
               ),
-              label: 'Favoris',
+              label: context.tr('favorites'),
             ),
             BottomNavigationBarItem(
               icon: AnimatedBuilder(
@@ -203,7 +225,7 @@ class _MainScreenState extends State<MainScreen>
                   child: const Icon(Icons.shopping_cart),
                 ),
               ),
-              label: 'Panier',
+              label: context.tr('cart'),
             ),
             BottomNavigationBarItem(
               icon: AnimatedBuilder(
@@ -213,7 +235,7 @@ class _MainScreenState extends State<MainScreen>
                   child: const Icon(Icons.person),
                 ),
               ),
-              label: 'Profil',
+              label: context.tr('profile'),
             ),
           ],
           currentIndex: _selectedIndex,
@@ -261,11 +283,9 @@ class _InnerHomeScreenState extends State<HomeScreen> {
 
       await favoritesProvider.loadFavorites();
       favoritesProvider.updateFavoritesFromProducts(productsProvider.products);
-      productsProvider.startListeningToProducts();
     });
   }
 
-  // FIX : le filtrage se fait directement dans le Consumer, plus besoin de _applyFilters()
   List<Product> _getFilteredProducts(List<Product> allProducts) {
     return allProducts.where((product) {
       final matchesSearch =
@@ -290,16 +310,14 @@ class _InnerHomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<ProductsProvider>(
       builder: (ctx, productsProvider, _) {
-        // FIX : calcul des produits filtrés à chaque rebuild du Consumer
         final displayedProducts = _getFilteredProducts(
           productsProvider.products,
         );
         final colorScheme = Theme.of(context).colorScheme;
 
-        // Affichage shimmer pendant le chargement
         if (productsProvider.isLoading && productsProvider.products.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Shoe Store'), centerTitle: true),
+            appBar: AppBar(title: Text(context.tr('app_title')), centerTitle: true),
             body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -344,7 +362,6 @@ class _InnerHomeScreenState extends State<HomeScreen> {
           );
         }
 
-        // Affichage erreur
         if (productsProvider.error != null &&
             productsProvider.products.isEmpty) {
           return Scaffold(
@@ -356,7 +373,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
-                    'Erreur de chargement',
+                    context.tr('loading_error'),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
@@ -368,7 +385,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => productsProvider.loadProducts(),
-                    child: const Text('Réessayer'),
+                    child: Text(context.tr('retry')),
                   ),
                 ],
               ),
@@ -378,7 +395,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Shoe Store'),
+            title: Text(context.tr('app_title')),
             centerTitle: true,
             actions: [
               Consumer<CartProvider>(
@@ -405,7 +422,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Des baskets haut de gamme',
+                      context.tr('premium_sneakers'),
                       style: TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -413,8 +430,8 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Trouve ta paire idéale avec style et performance.',
+                    Text(
+                      context.tr('find_ideal_pair'),
                       style: TextStyle(fontSize: 16, color: Colors.black54),
                     ),
                   ],
@@ -428,7 +445,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                 child: TextField(
                   onChanged: _filterProducts,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une chaussure, marque...',
+                    hintText: context.tr('search_hint'),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey[100],
@@ -450,7 +467,7 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                     final category = productsProvider.categories[i];
                     final selected = category == selectedCategory;
                     return ChoiceChip(
-                      label: Text(category),
+                      label: Text(category == 'Tout' ? context.tr('all') : category),
                       selected: selected,
                       selectedColor: colorScheme.primary,
                       backgroundColor: Colors.grey[200],
@@ -465,10 +482,10 @@ class _InnerHomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 10),
               Expanded(
                 child: displayedProducts.isEmpty && !productsProvider.isLoading
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'Aucun résultat trouvé 👟',
-                          style: TextStyle(fontSize: 16),
+                          context.tr('no_results'),
+                          style: const TextStyle(fontSize: 16),
                         ),
                       )
                     : GridView.builder(

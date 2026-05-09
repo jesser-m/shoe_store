@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cart_provider.dart';
 import '../screens/checkout_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -39,7 +40,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mon Panier'),
+        title: Text(context.tr('cart')),
         actions: [
           if (cartItems.isNotEmpty)
             IconButton(
@@ -48,24 +49,24 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text('Vider le panier'),
-                    content: const Text(
-                      'Êtes-vous sûr de vouloir vider votre panier ?',
+                    title: Text(context.tr('clear_cart')),
+                    content: Text(
+                      context.tr('clear_cart_confirm'),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        child: const Text('Annuler'),
+                        child: Text(context.tr('cancel')),
                       ),
                       TextButton(
                         onPressed: () {
                           cart.clear();
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Panier vidé')),
+                            SnackBar(content: Text(context.tr('cart_cleared'))),
                           );
                         },
-                        child: const Text('Vider'),
+                        child: Text(context.tr('clear')),
                       ),
                     ],
                   ),
@@ -112,7 +113,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                     );
                   },
                   icon: const Icon(Icons.payment),
-                  label: const Text('PAIEMENT'),
+                  label: Text(context.tr('checkout')),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
@@ -129,7 +130,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
           Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
-            'Votre panier est vide',
+            context.tr('empty_cart'),
             style: TextStyle(
               fontSize: 20,
               color: Colors.grey[600],
@@ -138,7 +139,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 8),
           Text(
-            'Ajoutez des produits pour commencer vos achats',
+            context.tr('add_products_prompt'),
             style: TextStyle(fontSize: 16, color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
@@ -146,7 +147,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
           ElevatedButton.icon(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.shopping_bag),
-            label: const Text('Continuer mes achats'),
+            label: Text(context.tr('continue_shopping')),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -165,14 +166,14 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                const Text(
-                  'Total',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  context.tr('total'),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 Chip(
                   label: Text(
-                    '${cart.totalAmount.toStringAsFixed(2)} €',
+                    '${cart.totalAmount.toStringAsFixed(2)} â‚¬',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -203,9 +204,9 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                   cart.removeItem(item.id);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('${item.name} retiré du panier'),
+                      content: Text('${item.name} ${context.tr('removed_from_cart')}'),
                       action: SnackBarAction(
-                        label: 'Annuler',
+                        label: context.tr('cancel'),
                         onPressed: () => cart.addItem(
                           item.id,
                           item.price,
@@ -228,7 +229,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 5,
                         offset: const Offset(0, 2),
                       ),
@@ -263,7 +264,7 @@ class _CartScreenState extends State<CartScreen> with TickerProviderStateMixin {
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Text(
-                      'Total: ${(item.price * item.quantity).toStringAsFixed(2)} €',
+                      'Total: ${(item.price * item.quantity).toStringAsFixed(2)} â‚¬',
                     ),
                     trailing: SizedBox(
                       width: 110,

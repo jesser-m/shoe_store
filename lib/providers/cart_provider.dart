@@ -1,13 +1,27 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 class CartItem {
   final String id;
+  final String? productId;
   final String name;
   final double price;
   final String imageUrl;
+  final String? size;
+  final String? color;
   int quantity;
 
-  CartItem({required this.id, required this.name, required this.price, required this.imageUrl, this.quantity = 1});
+  CartItem({
+    String? id,
+    this.productId,
+    required this.name,
+    required this.price,
+    required this.imageUrl,
+    this.size,
+    this.color,
+    this.quantity = 1,
+  }) : id = id ?? productId ?? '';
+
+  String get resolvedProductId => productId ?? id;
 }
 
 class CartProvider with ChangeNotifier {
@@ -15,7 +29,8 @@ class CartProvider with ChangeNotifier {
 
   Map<String, CartItem> get items => {..._items};
 
-  int get itemCount => _items.values.fold(0, (sum, item) => sum + item.quantity);
+  int get itemCount =>
+      _items.values.fold(0, (sum, item) => sum + item.quantity);
 
   double get totalAmount {
     double total = 0.0;
@@ -40,10 +55,15 @@ class CartProvider with ChangeNotifier {
     } else {
       _items.putIfAbsent(
         productId,
-        () => CartItem(id: productId, name: name, price: price, imageUrl: imageUrl),
+        () => CartItem(
+          id: productId,
+          name: name,
+          price: price,
+          imageUrl: imageUrl,
+        ),
       );
     }
-    notifyListeners(); // Indique à l'app de se mettre à jour
+    notifyListeners(); // Indique Ã  l'app de se mettre Ã  jour
   }
 
   void removeSingleItem(String productId) {
@@ -56,7 +76,9 @@ class CartProvider with ChangeNotifier {
         (existing) => CartItem(
           id: existing.id,
           name: existing.name,
-          price: existing.price,          imageUrl: existing.imageUrl,          quantity: existing.quantity - 1,
+          price: existing.price,
+          imageUrl: existing.imageUrl,
+          quantity: existing.quantity - 1,
         ),
       );
     } else {

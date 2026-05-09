@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/order_provider.dart';
@@ -119,7 +119,7 @@ class _OrderCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8),
         ],
       ),
       child: Padding(
@@ -143,7 +143,7 @@ class _OrderCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _statusColor(order.status).withOpacity(0.12),
+                    color: _statusColor(order.status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -170,7 +170,7 @@ class _OrderCard extends StatelessWidget {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(Icons.image),
+                        errorBuilder: (_, _, _) => const Icon(Icons.image),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -194,7 +194,7 @@ class _OrderCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${(item.price * item.quantity).toStringAsFixed(2)} €',
+                      '${(item.price * item.quantity).toStringAsFixed(2)} â‚¬',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -210,7 +210,7 @@ class _OrderCard extends StatelessWidget {
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                 ),
                 Text(
-                  '${order.totalAmount.toStringAsFixed(2)} €',
+                  '${order.totalAmount.toStringAsFixed(2)} â‚¬',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,12 +46,16 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7FF),
       appBar: AppBar(
-        title: const Text('Connexion'),
+        title: Text('Connexion', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: const Color(0xFF1A1A2E),
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -60,22 +66,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Icon(
                   Icons.shopping_bag,
                   size: 80,
-                  color: Colors.blue,
+                  color: Colors.deepPurple,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Bienvenue sur Shoe Store',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: const Color(0xFF1A1A2E),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Connectez-vous pour continuer',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     color: Colors.black54,
                   ),
@@ -114,12 +120,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       return 'Veuillez entrer votre mot de passe';
                     }
                     if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
+                      return 'Le mot de passe doit contenir au moins 6 caractÃ¨res';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (ctx) => const ForgotPasswordScreen()),
+                      );
+                    },
+                    child: Text(
+                      'Mot de passe oublié ?',
+                      style: GoogleFonts.inter(color: Colors.deepPurple, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 if (_errorMessage != null)
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -138,10 +159,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ElevatedButton(
                   onPressed: authProvider.isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 4,
+                    shadowColor: Colors.deepPurple.withValues(alpha: 0.4),
                   ),
                   child: authProvider.isLoading
                       ? const SizedBox(
@@ -152,9 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Se connecter',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
                 const SizedBox(height: 16),
@@ -164,9 +189,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       MaterialPageRoute(builder: (ctx) => const SignupScreen()),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     'Pas de compte ? S\'inscrire',
-                    style: TextStyle(color: Colors.blue),
+                    style: GoogleFonts.inter(color: Colors.deepPurple, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

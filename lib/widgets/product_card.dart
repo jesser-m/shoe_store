@@ -35,7 +35,7 @@ class _ProductCardState extends State<ProductCard> with TickerProviderStateMixin
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    // Animation de succès (rebond)
+    // Animation de succÃ¨s (rebond)
     _successAnimationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -124,11 +124,11 @@ class _ProductCardState extends State<ProductCard> with TickerProviderStateMixin
                             ),
                           ),
                         ),
-                        // Overlay Succès
+                        // Overlay SuccÃ¨s
                         if (_showSuccess)
                           Positioned.fill(
                             child: Container(
-                              color: Colors.green.withOpacity(0.7),
+                              color: Colors.green.withValues(alpha: 0.7),
                               child: const Icon(Icons.check_circle, color: Colors.white, size: 50),
                             ),
                           ),

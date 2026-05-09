@@ -54,7 +54,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                           label: Text('$d jours'),
                           selected: selected,
                           onSelected: (_) => setState(() => _period = d),
-                          selectedColor: Colors.deepPurple.withOpacity(0.2),
+                          selectedColor: Colors.deepPurple.withValues(alpha: 0.2),
                           labelStyle: TextStyle(
                             color: selected
                                 ? Colors.deepPurple
@@ -111,7 +111,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
     final stats = [
       _StatCard(
         label: 'Chiffre d\'affaires',
-        value: '${orders.totalRevenue.toStringAsFixed(0)} €',
+        value: '${orders.totalRevenue.toStringAsFixed(0)} â‚¬',
         icon: Icons.trending_up,
         color: Colors.deepPurple,
       ),
@@ -123,7 +123,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
       ),
       _StatCard(
         label: 'Panier moyen',
-        value: '${avgOrder.toStringAsFixed(2)} €',
+        value: '${avgOrder.toStringAsFixed(2)} â‚¬',
         icon: Icons.shopping_cart_outlined,
         color: Colors.blue,
       ),
@@ -153,7 +153,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
         ],
       ),
       child: Row(
@@ -161,7 +161,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: s.color.withOpacity(0.1),
+              color: s.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(s.icon, color: s.color, size: 22),
@@ -202,14 +202,14 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Évolution des revenus',
+            'Ã‰volution des revenus',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           const SizedBox(height: 20),
@@ -236,7 +236,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                           dotData: const FlDotData(show: true),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: Colors.deepPurple.withOpacity(0.08),
+                            color: Colors.deepPurple.withValues(alpha: 0.08),
                           ),
                         ),
                       ],
@@ -255,8 +255,9 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
                             showTitles: true,
                             getTitlesWidget: (value, _) {
                               final i = value.toInt();
-                              if (i < 0 || i >= entries.length)
+                              if (i < 0 || i >= entries.length) {
                                 return const SizedBox.shrink();
+                              }
                               return Text(
                                 entries[i].key,
                                 style: const TextStyle(fontSize: 10),
@@ -305,7 +306,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -418,7 +419,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -490,7 +491,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -528,7 +529,7 @@ class _AdminReportsScreenState extends State<AdminReportsScreen> {
           ],
           if (lowStock.isNotEmpty) ...[
             Text(
-              'Stock faible ≤5 (${lowStock.length})',
+              'Stock faible â‰¤5 (${lowStock.length})',
               style: const TextStyle(
                 color: Colors.orange,
                 fontWeight: FontWeight.w500,
@@ -583,7 +584,7 @@ class _AlertRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(

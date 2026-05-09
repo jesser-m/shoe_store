@@ -1,4 +1,4 @@
-import '../models/user_model.dart';
+﻿import '../models/user_model.dart';
 import 'api_service.dart';
 
 class UserService {
@@ -97,8 +97,7 @@ class UserService {
       final lowercaseQuery = query.toLowerCase();
       return users.where((u) {
         return u.email.toLowerCase().contains(lowercaseQuery) ||
-            (u.displayName?.toLowerCase().contains(lowercaseQuery) ?? false) ||
-            u.name.toLowerCase().contains(lowercaseQuery);
+            (u.displayName?.toLowerCase().contains(lowercaseQuery) ?? false);
       }).toList();
     } catch (e) {
       throw Exception('Erreur lors de la recherche d\'utilisateurs: $e');

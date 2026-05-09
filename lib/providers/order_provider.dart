@@ -1,11 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import '../models/order.dart';
+import '../services/order_service.dart';
 
 class OrderProvider with ChangeNotifier {
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  StreamSubscription<QuerySnapshot>? _ordersSubscription;
+  final OrderService _orderService = OrderService();
 
   List<Order> _orders = [];
   bool _isLoading = false;
@@ -65,12 +64,8 @@ class OrderProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final snapshot = await _firestore
-          .collection('orders')
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      _orders = snapshot.docs.map((doc) => Order.fromFirestore(doc)).toList();
+      final ordersList = await _orderService.getAllOrders();
+      _orders = ordersList;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -84,10 +79,7 @@ class OrderProvider with ChangeNotifier {
 
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     try {
-      await _firestore.collection('orders').doc(orderId).update({
-        'status': newStatus,
-        'updatedAt': Timestamp.now(),
-      });
+      await _orderService.updateOrderStatus(orderId, newStatus);
       final idx = _orders.indexWhere((o) => o.id == orderId);
       if (idx != -1) {
         _orders[idx] = _orders[idx].copyWith(
@@ -98,32 +90,8 @@ class OrderProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error updating order: $e');
-      throw Exception('Erreur lors de la mise à jour');
+      throw Exception('Erreur lors de la mise Ã  jour');
     }
-  }
-
-  void startListening() {
-    _ordersSubscription?.cancel();
-    _ordersSubscription = _firestore
-        .collection('orders')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _orders = snapshot.docs
-                .map((doc) => Order.fromFirestore(doc))
-                .toList();
-            notifyListeners();
-          },
-          onError: (e) {
-            _error = e.toString();
-            notifyListeners();
-          },
-        );
-  }
-
-  void stopListening() {
-    _ordersSubscription?.cancel();
   }
 
   List<Order> _getDemoOrders() {
@@ -214,7 +182,7 @@ class OrderProvider with ChangeNotifier {
         items: [
           OrderItem(
             productId: '3',
-            productName: 'Puma RS-X³',
+            productName: 'Puma RS-XÂ³',
             productImage:
                 'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
             price: 149.99,
@@ -273,9 +241,4 @@ class OrderProvider with ChangeNotifier {
     ];
   }
 
-  @override
-  void dispose() {
-    _ordersSubscription?.cancel();
-    super.dispose();
-  }
 }

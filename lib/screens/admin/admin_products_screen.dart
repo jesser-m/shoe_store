@@ -100,7 +100,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                               label: Text(cat),
                               selected: selected,
                               onSelected: (_) => setState(() => _filterCategory = cat),
-                              selectedColor: Colors.deepPurple.withOpacity(0.15),
+                              selectedColor: Colors.deepPurple.withValues(alpha: 0.15),
                               checkmarkColor: Colors.deepPurple,
                               labelStyle: TextStyle(color: selected ? Colors.deepPurple : Colors.grey.shade700, fontWeight: selected ? FontWeight.bold : FontWeight.normal),
                             ),
@@ -178,11 +178,19 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await provider.deleteProduct(id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Produit supprimé'), backgroundColor: Colors.red),
-                );
+              try {
+                await provider.deleteProduct(id);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Produit supprimé avec succès'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Échec de la suppression: $e'), backgroundColor: Colors.red),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
@@ -208,7 +216,7 @@ class _ProductListCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -219,7 +227,7 @@ class _ProductListCard extends StatelessWidget {
             width: 56,
             height: 56,
             fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
+            errorBuilder: (_, _, _) => Container(
               width: 56,
               height: 56,
               color: Colors.grey.shade200,
@@ -231,16 +239,16 @@ class _ProductListCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${product.brand} · ${product.category}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            Text('${product.brand} Â· ${product.category}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
             const SizedBox(height: 4),
             Row(
               children: [
-                Text('${product.price.toStringAsFixed(2)} €', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('${product.price.toStringAsFixed(2)} â‚¬', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 13)),
                 const SizedBox(width: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: product.stockQuantity > 5 ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    color: product.stockQuantity > 5 ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -281,7 +289,7 @@ class _ProductGridCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,7 +303,7 @@ class _ProductGridCard extends StatelessWidget {
                   Image.network(
                     product.imageUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.image, size: 40)),
+                    errorBuilder: (_, _, _) => Container(color: Colors.grey.shade200, child: const Icon(Icons.image, size: 40)),
                   ),
                   Positioned(
                     top: 6,
@@ -306,7 +314,7 @@ class _ProductGridCard extends StatelessWidget {
                           onTap: onEdit,
                           child: Container(
                             padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)]),
                             child: const Icon(Icons.edit_outlined, size: 16, color: Colors.blue),
                           ),
                         ),
@@ -315,7 +323,7 @@ class _ProductGridCard extends StatelessWidget {
                           onTap: onDelete,
                           child: Container(
                             padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]),
+                            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)]),
                             child: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
                           ),
                         ),
@@ -338,7 +346,7 @@ class _ProductGridCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${product.price.toStringAsFixed(2)} €', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text('${product.price.toStringAsFixed(2)} â‚¬', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold, fontSize: 13)),
                     Text('${product.stockQuantity} en stock', style: TextStyle(color: product.stockQuantity > 5 ? Colors.green : Colors.orange, fontSize: 10)),
                   ],
                 ),

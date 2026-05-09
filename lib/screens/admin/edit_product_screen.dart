@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../../models/product.dart';
 import '../../providers/products_provider.dart';
+import '../../config/api_config.dart';
+import '../../services/api_service.dart';
 
 class EditProductScreen extends StatefulWidget {
   final Product? product;
@@ -28,6 +33,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   final _sizeCtrl = TextEditingController();
   final _colorCtrl = TextEditingController();
+  final _imageUrlCtrl = TextEditingController();
 
   static const _predefinedSizes = ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
   static const _predefinedColors = ['Noir', 'Blanc', 'Rouge', 'Bleu', 'Vert', 'Gris', 'Multicolore', 'Beige'];
@@ -46,13 +52,83 @@ class _EditProductScreenState extends State<EditProductScreen> {
     _inStock = p?.inStock ?? true;
     _sizes = List<String>.from(p?.sizes ?? []);
     _colors = List<String>.from(p?.colors ?? []);
+    _imageUrlCtrl.text = _imageUrl;
   }
 
   @override
   void dispose() {
     _sizeCtrl.dispose();
     _colorCtrl.dispose();
+    _imageUrlCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    
+    if (pickedFile != null) {
+      setState(() => _isLoading = true);
+      try {
+        final token = await ApiService.getToken();
+        if (token == null || token.isEmpty) {
+          throw Exception('Session expirée. Veuillez vous reconnecter.');
+        }
+
+        final bytes = await pickedFile.readAsBytes();
+        final response = await ApiService.uploadBytes(
+          '/upload',
+          bytes,
+          filename: pickedFile.name,
+        );
+        
+        final responseData = await response.stream.bytesToString();
+        dynamic jsonResponse;
+        try {
+          jsonResponse = json.decode(responseData);
+        } catch (e) {
+          debugPrint('Failed to decode response: $responseData');
+        }
+        
+        if (response.statusCode == 200) {
+          setState(() {
+            String returnedUrl = jsonResponse['imageUrl'];
+            if (returnedUrl.startsWith('/')) {
+              final host = ApiConfig.baseUrl.split('/api').first;
+              _imageUrl = '$host$returnedUrl';
+            } else {
+              _imageUrl = returnedUrl;
+            }
+            _imageUrlCtrl.text = _imageUrl;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image uploadée avec succès !'), backgroundColor: Colors.green)
+            );
+          }
+        } else {
+          String errorMsg = 'Erreur lors de l\'upload (${response.statusCode})';
+          if (jsonResponse != null && jsonResponse['msg'] != null) {
+            errorMsg = jsonResponse['msg'];
+          } else if (jsonResponse != null && jsonResponse['message'] != null) {
+            errorMsg = jsonResponse['message'];
+          } else if (responseData.contains('<!DOCTYPE')) {
+            errorMsg = 'Le serveur a retourné une erreur HTML (404 ou 500).';
+          }
+          throw Exception(errorMsg);
+        }
+      } catch (e) {
+        debugPrint('Upload error: $e');
+        if (mounted) {
+          String finalMsg = e.toString().replaceFirst('Exception: ', '');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur d\'upload: $finalMsg'), backgroundColor: Colors.red, duration: const Duration(seconds: 5))
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _saveForm() async {
@@ -183,7 +259,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                           children: [
                             Expanded(
                               child: _buildField(
-                                label: 'Prix (€)',
+                                label: 'Prix (â‚¬)',
                                 initialValue: _price.toString(),
                                 keyboardType: TextInputType.number,
                                 onSaved: (v) => _price = double.parse(v!),
@@ -217,7 +293,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
                           value: _inStock,
                           onChanged: (v) => setState(() => _inStock = v),
                           title: const Text('En stock', style: TextStyle(fontWeight: FontWeight.w500)),
-                          subtitle: Text(_inStock ? 'Disponible à la vente' : 'Non disponible'),
+                          subtitle: Text(_inStock ? 'Disponible Ã  la vente' : 'Non disponible'),
                           activeColor: Colors.deepPurple,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -318,7 +394,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   Widget _buildImageSection() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -334,17 +410,23 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   color: Colors.grey.shade100,
                   child: _imageUrl.isEmpty
                       ? const Icon(Icons.image_outlined, size: 36, color: Colors.grey)
-                      : Image.network(_imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.grey)),
+                      : Image.network(_imageUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.broken_image, color: Colors.grey)),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: TextFormField(
-                  initialValue: _imageUrl,
+                  controller: _imageUrlCtrl,
                   decoration: InputDecoration(
                     labelText: 'URL de l\'image',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     prefixIcon: const Icon(Icons.link),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.photo_library),
+                      onPressed: _pickAndUploadImage,
+                      tooltip: 'Uploader depuis la galerie',
+                      color: Colors.deepPurple,
+                    ),
                   ),
                   keyboardType: TextInputType.url,
                   onChanged: (v) => setState(() => _imageUrl = v),
@@ -370,7 +452,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -81,7 +81,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen> {
                   trailing: Switch(
                     value: cat.isActive,
                     onChanged: (_) => provider.toggleActive(cat),
-                    activeColor: Colors.deepPurple,
+                    activeThumbColor: Colors.deepPurple,
                   ),
                 ),
               );

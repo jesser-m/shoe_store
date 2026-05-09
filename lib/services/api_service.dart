@@ -1,13 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/api_config.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
-  // For Android emulator use: 'http://10.0.2.2:5000/api'
-  // For iOS simulator use: 'http://127.0.0.1:5000/api'
-  // For production change to your server domain
+  static String get baseUrl => ApiConfig.baseUrl;
 
   static final _storage = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -17,16 +16,20 @@ class ApiService {
 
   // Get token
   static Future<String?> getToken() async {
-    return await _storage.read(key: _tokenKey);
+    final token = await _storage.read(key: _tokenKey);
+    debugPrint('ApiService: Retrieved token: ${token != null ? "FOUND (len: ${token.length})" : "NOT FOUND"}');
+    return token?.trim();
   }
 
   // Save token
   static Future<void> saveToken(String token) async {
-    await _storage.write(key: _tokenKey, value: token);
+    debugPrint('ApiService: Saving token (len: ${token.length})');
+    await _storage.write(key: _tokenKey, value: token.trim());
   }
 
   // Delete token
   static Future<void> deleteToken() async {
+    debugPrint('ApiService: Deleting token');
     await _storage.delete(key: _tokenKey);
   }
 
@@ -37,6 +40,10 @@ class ApiService {
       final token = await getToken();
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
+        // For backward compatibility with some backend versions
+        headers['x-auth-token'] = token;
+      } else {
+        debugPrint('ApiService: No token available for auth request');
       }
     }
     return headers;
@@ -111,7 +118,8 @@ class ApiService {
       }
     }
 
-    request.files.add(await http.MultipartFile.fromPath(field, file.path));
+    final bytes = await file.readAsBytes();
+    request.files.add(http.MultipartFile.fromBytes(field, bytes, filename: file.path.split('/').last));
 
     return await request.send();
   }
@@ -131,6 +139,10 @@ class ApiService {
       final token = await getToken();
       if (token != null && token.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $token';
+        request.headers['x-auth-token'] = token;
+        debugPrint('ApiService: Attached token to upload request');
+      } else {
+        debugPrint('ApiService: No token available for upload request');
       }
     }
 

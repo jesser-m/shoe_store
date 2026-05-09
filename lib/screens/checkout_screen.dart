@@ -21,6 +21,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _countryController = TextEditingController(text: 'France');
   final _phoneController = TextEditingController();
   final _notesController = TextEditingController();
+  String _paymentMethod = 'card'; // 'card' or 'cod'
 
   @override
   void dispose() {
@@ -74,7 +75,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             title: Text(item.name),
                             subtitle: Text('Quantité: ${item.quantity}'),
                             trailing: Text(
-                              '${(item.price * item.quantity).toStringAsFixed(2)} €',
+                              '${(item.price * item.quantity).toStringAsFixed(2)} â‚¬',
                             ),
                           );
                         }).toList(),
@@ -99,7 +100,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         ),
                         Text(
-                          '${cart.totalAmount.toStringAsFixed(2)} €',
+                          '${cart.totalAmount.toStringAsFixed(2)} â‚¬',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -221,6 +222,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Payment Method Selection
+                  const Text(
+                    'Méthode de paiement',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          value: 'card',
+                          groupValue: _paymentMethod,
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          title: const Text('Carte Bancaire'),
+                          secondary: const Icon(Icons.credit_card, color: Colors.blue),
+                          onChanged: (v) => setState(() => _paymentMethod = v!),
+                        ),
+                        const Divider(height: 1),
+                        RadioListTile<String>(
+                          value: 'cod',
+                          groupValue: _paymentMethod,
+                          activeColor: Theme.of(context).colorScheme.primary,
+                          title: const Text('Paiement à la livraison'),
+                          secondary: const Icon(Icons.delivery_dining, color: Colors.green),
+                          onChanged: (v) => setState(() => _paymentMethod = v!),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Payment Button
                   SizedBox(
                     width: double.infinity,
@@ -253,14 +289,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   };
                                 }).toList();
 
-                                final success = await paymentProvider
-                                    .processPayment(
-                                      cartItems: cartItems,
-                                      totalAmount: cart.totalAmount,
-                                      customerEmail:
-                                          authProvider.user?.email ?? '',
-                                      shippingAddress: shippingAddress,
-                                    );
+                                bool success = false;
+                                String paymentId = '';
+
+                                if (_paymentMethod == 'card') {
+                                  final pId = await paymentProvider.processPayment(
+                                    cartItems: cartItems,
+                                    totalAmount: cart.totalAmount,
+                                    customerEmail: authProvider.user?.email ?? '',
+                                    shippingAddress: shippingAddress,
+                                  );
+                                  if (pId != null) {
+                                    success = true;
+                                    paymentId = pId;
+                                  }
+                                } else {
+                                  // COD is always "success" in this step
+                                  success = true;
+                                  paymentId = 'cod_${DateTime.now().millisecondsSinceEpoch}';
+                                }
 
                                 if (success) {
                                   // Create order
@@ -269,7 +316,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                     cartItems: cartItems,
                                     totalAmount: cart.totalAmount,
                                     shippingAddress: shippingAddress,
-                                    paymentIntentId: 'mock_payment_intent_id',
+                                    paymentIntentId: paymentId,
                                   );
 
                                   // Clear cart
@@ -278,9 +325,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   // Show success message and navigate
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
+                                      SnackBar(
                                         content: Text(
-                                          'Paiement réussi ! Votre commande a été passée.',
+                                          _paymentMethod == 'card' 
+                                            ? 'Paiement réussi ! Votre commande a été passée.'
+                                            : 'Commande confirmée ! Vous paierez à la livraison.',
                                         ),
                                         backgroundColor: Colors.green,
                                       ),
@@ -308,12 +357,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         foregroundColor: Theme.of(
                           context,
                         ).colorScheme.onPrimary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: paymentProvider.isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text(
-                              'Payer maintenant',
-                              style: TextStyle(fontSize: 18),
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              _paymentMethod == 'card' ? 'Payer maintenant' : 'Confirmer la commande',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),

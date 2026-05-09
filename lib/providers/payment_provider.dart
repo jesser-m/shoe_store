@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/api_service.dart';
 import '../models/order.dart' as order_model;
+import '../services/order_service.dart';
 import '../config/stripe_config.dart';
-
+import '../config/api_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 class PaymentProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
@@ -16,8 +19,10 @@ class PaymentProvider with ChangeNotifier {
   // Initialize Stripe
   Future<void> initializeStripe() async {
     try {
-      Stripe.publishableKey = StripeConfig.publishableKey;
-      await Stripe.instance.applySettings();
+      if (!kIsWeb) {
+        Stripe.publishableKey = StripeConfig.publishableKey;
+        await Stripe.instance.applySettings();
+      }
     } catch (e) {
       _error = 'Erreur d\'initialisation Stripe: $e';
       notifyListeners();
@@ -31,43 +36,24 @@ class PaymentProvider with ChangeNotifier {
     required String customerEmail,
   }) async {
     try {
-      // In a real app, this would call your backend server
-      // For demo purposes, we'll simulate the response
-      // Replace this with actual server call to create payment intent
-
-      final response = await http.post(
-        Uri.parse('https://api.stripe.com/v1/payment_intents'),
-        headers: {
-          'Authorization': 'Bearer ${StripeConfig.publishableKey.replaceFirst('pk_test_', 'sk_test_').replaceFirst('pk_live_', 'sk_live_')}',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+      final response = await ApiService.post(
+        '/payment/create-payment-intent',
         body: {
-          'amount': (amount * 100).toInt().toString(), // Convert to cents
+          'amount': amount,
           'currency': currency,
-          'receipt_email': customerEmail,
-          'automatic_payment_methods[enabled]': 'true',
+          'customerEmail': customerEmail,
         },
       );
 
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to create payment intent: ${response.body}');
-      }
+      return ApiService.handleResponse(response);
     } catch (e) {
       debugPrint('Error creating payment intent: $e');
-      // For demo purposes, return a mock payment intent
-      return {
-        'id': 'pi_mock_${DateTime.now().millisecondsSinceEpoch}',
-        'client_secret': 'pi_mock_secret_${DateTime.now().millisecondsSinceEpoch}',
-        'amount': (amount * 100).toInt(),
-        'currency': currency,
-      };
+      rethrow;
     }
   }
 
   // Process payment
-  Future<bool> processPayment({
+  Future<String?> processPayment({
     required List<Map<String, dynamic>> cartItems,
     required double totalAmount,
     required String customerEmail,
@@ -78,51 +64,75 @@ class PaymentProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Create payment intent
-      final paymentIntent = await _createPaymentIntent(
-        amount: totalAmount,
-        currency: 'eur',
-        customerEmail: customerEmail,
-      );
+      if (kIsWeb) {
+        // Web flow: Use Stripe Checkout
+        final session = await ApiService.post(
+          '/payment/create-checkout-session',
+          body: {
+            'items': cartItems,
+            'customerEmail': customerEmail,
+            'successUrl': '${Uri.base.origin}/#/orders?status=success',
+            'cancelUrl': '${Uri.base.origin}/#/checkout?status=cancel',
+          },
+        );
 
-      if (paymentIntent == null) {
-        throw Exception('Impossible de créer l\'intention de paiement');
-      }
+        final sessionData = ApiService.handleResponse(session);
+        if (sessionData != null && sessionData['url'] != null) {
+          // Redirect to Stripe Checkout
+          final url = Uri.parse(sessionData['url'] as String);
+          
+          if (await canLaunchUrl(url)) {
+            await launchUrl(url, mode: LaunchMode.externalApplication);
+          } else {
+            throw Exception('Impossible d\'ouvrir la page de paiement');
+          }
+          
+          return 'web_checkout_redirect';
+        } else {
+          throw Exception('Impossible de créer la session de paiement');
+        }
+      } else {
+        // Mobile flow: Use Payment Sheet
+        final paymentIntent = await _createPaymentIntent(
+          amount: totalAmount,
+          currency: 'eur',
+          customerEmail: customerEmail,
+        );
 
-      // Initialize payment sheet
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: paymentIntent['client_secret'],
-          merchantDisplayName: 'Shoe Store',
-          customerId: null,
-          customerEphemeralKeySecret: null,
-          style: ThemeMode.system,
-          billingDetails: BillingDetails(
-            email: customerEmail,
-            address: Address(
-              city: shippingAddress.city,
-              country: shippingAddress.country,
-              line1: shippingAddress.address,
-              line2: null,
-              postalCode: shippingAddress.postalCode,
-              state: null,
+        if (paymentIntent == null) {
+          throw Exception('Impossible de créer l\'intention de paiement');
+        }
+
+        await Stripe.instance.initPaymentSheet(
+          paymentSheetParameters: SetupPaymentSheetParameters(
+            paymentIntentClientSecret: paymentIntent['client_secret'],
+            merchantDisplayName: 'Shoe Store',
+            style: ThemeMode.system,
+            billingDetails: BillingDetails(
+              email: customerEmail,
+              address: Address(
+                city: shippingAddress.city,
+                country: shippingAddress.country,
+                line1: shippingAddress.address,
+                line2: null,
+                postalCode: shippingAddress.postalCode,
+                state: null,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Present payment sheet
-      await Stripe.instance.presentPaymentSheet();
+        await Stripe.instance.presentPaymentSheet();
 
-      _isLoading = false;
-      notifyListeners();
-      return true;
-
+        _isLoading = false;
+        notifyListeners();
+        return paymentIntent['id'];
+      }
     } catch (e) {
       _isLoading = false;
       _error = 'Erreur de paiement: $e';
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
@@ -157,15 +167,15 @@ class PaymentProvider with ChangeNotifier {
       shippingAddress: shippingAddress,
     );
 
-    // Save order to Firestore
     try {
-      final docRef = await FirebaseFirestore.instance
-          .collection('orders')
-          .add(order.toFirestore());
-      return order.copyWith(id: docRef.id);
+      final orderService = OrderService();
+      final createdOrder = await orderService.createOrder(order);
+      return createdOrder;
     } catch (e) {
-      debugPrint('Error saving order to Firestore: $e');
-      return order.copyWith(id: 'mock_order_${DateTime.now().millisecondsSinceEpoch}');
+      debugPrint('Error saving order to backend: $e');
+      return order.copyWith(
+        id: 'mock_order_${DateTime.now().millisecondsSinceEpoch}',
+      );
     }
   }
 

@@ -1,4 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿DateTime? _parseDate(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  return null;
+}
 
 class Category {
   final String id;
@@ -21,31 +26,29 @@ class Category {
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
-  factory Category.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  factory Category.fromJson(Map<String, dynamic> json) {
     return Category(
-      id: doc.id,
-      name: data['name'] ?? '',
-      iconName: data['iconName'] ?? 'category',
-      imageUrl: data['imageUrl'] ?? '',
-      productCount: data['productCount'] ?? 0,
-      isActive: data['isActive'] ?? true,
-      sortOrder: data['sortOrder'] ?? 0,
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      iconName: json['iconName'] ?? 'category',
+      imageUrl: json['imageUrl'] ?? '',
+      productCount: json['productCount'] ?? 0,
+      isActive: json['isActive'] ?? true,
+      sortOrder: json['sortOrder'] ?? 0,
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      '_id': id,
       'name': name,
       'iconName': iconName,
       'imageUrl': imageUrl,
       'productCount': productCount,
       'isActive': isActive,
       'sortOrder': sortOrder,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 

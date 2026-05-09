@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/product_card.dart';
 import '../providers/favorites_provider.dart';
+import '../l10n/app_localizations.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -11,22 +12,22 @@ class FavoritesScreen extends StatelessWidget {
     return Consumer<FavoritesProvider>(
       builder: (ctx, favorites, _) {
         return Scaffold(
-          appBar: AppBar(title: const Text('Favoris')),
+          appBar: AppBar(title: Text(context.tr('favorites'))),
           body: favorites.favorites.isEmpty
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.favorite_border, size: 64, color: Colors.grey),
+                      const Icon(Icons.favorite_border, size: 64, color: Colors.grey),
                       SizedBox(height: 16),
                       Text(
-                        'Aucun favori pour le moment',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                        context.tr('no_favorites'),
+                        style: const TextStyle(fontSize: 18, color: Colors.grey),
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Ajoutez des produits à vos favoris !',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                        context.tr('add_favorites_prompt'),
+                        style: const TextStyle(fontSize: 14, color: Colors.grey),
                       ),
                     ],
                   ),

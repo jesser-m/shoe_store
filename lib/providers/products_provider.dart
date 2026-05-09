@@ -1,11 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/product.dart';
+import '../services/product_service.dart';
 
 class ProductsProvider with ChangeNotifier {
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
-  StreamSubscription<QuerySnapshot>? _productsSubscription;
+  final ProductService _productService = ProductService();
   List<Product> _products = [];
   List<String> _categories = [];
   bool _isLoading = false;
@@ -16,13 +15,11 @@ class ProductsProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // Get products by category
   List<Product> getProductsByCategory(String category) {
     if (category == 'Tout') return products;
     return products.where((product) => product.category == category).toList();
   }
 
-  // Search products
   List<Product> searchProducts(String query) {
     if (query.isEmpty) return products;
     final lowercaseQuery = query.toLowerCase();
@@ -36,26 +33,15 @@ class ProductsProvider with ChangeNotifier {
         .toList();
   }
 
-  // Load products from Firestore
   Future<void> loadProducts() async {
     try {
       _isLoading = true;
       _error = null;
       notifyListeners();
 
-      final QuerySnapshot snapshot = await _firestore
-          .collection('products')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final productsList = await _productService.getProducts();
+      _products = productsList;
 
-      _products = snapshot.docs.map((doc) {
-        return Product.fromFirestore(
-          doc.data() as Map<String, dynamic>,
-          doc.id,
-        );
-      }).toList();
-
-      // Extract unique categories
       _categories = [
         'Tout',
         ..._products.map((p) => p.category).toSet().where((c) => c.isNotEmpty),
@@ -65,27 +51,26 @@ class ProductsProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _isLoading = false;
-      
-      // Fallback to local data for demo purposes if Firebase fails
       _products = _getDemoProducts();
       _categories = [
         'Tout',
         ..._products.map((p) => p.category).toSet().where((c) => c.isNotEmpty),
       ];
       _error = null;
-      
       notifyListeners();
-      debugPrint('Error loading products: $e - Falling back to local demo data');
+      debugPrint(
+        'Error loading products: $e - Falling back to local demo data',
+      );
     }
   }
 
-  // Local demo products fallback
   List<Product> _getDemoProducts() {
     return [
       Product(
         id: '1',
         name: 'Nike Air Max 270',
-        description: 'Le confort ultime avec la technologie Air Max révolutionnaire.',
+        description:
+            'Le confort ultime avec la technologie Air Max révolutionnaire.',
         price: 199.99,
         imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
         images: [
@@ -106,9 +91,10 @@ class ProductsProvider with ChangeNotifier {
       Product(
         id: '2',
         name: 'Adidas Ultraboost 22',
-        description: 'Conçu pour les coureurs qui exigent le meilleur.',
+        description: 'ConÃ§u pour les coureurs qui exigent le meilleur.',
         price: 189.99,
-        imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
+        imageUrl:
+            'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
         images: [
           'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
         ],
@@ -125,10 +111,11 @@ class ProductsProvider with ChangeNotifier {
       ),
       Product(
         id: '3',
-        name: 'Puma RS-X³',
+        name: 'Puma RS-XÂ³',
         description: 'Style urbain rétro avec technologie moderne.',
         price: 149.99,
-        imageUrl: 'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
+        imageUrl:
+            'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
         images: [
           'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
         ],
@@ -146,16 +133,11 @@ class ProductsProvider with ChangeNotifier {
     ];
   }
 
-  // Add a new product (for admin purposes)
   Future<void> addProduct(Product product) async {
     try {
-      final docRef = await _firestore
-          .collection('products')
-          .add(product.toFirestore());
-      final newProduct = product.copyWith(id: docRef.id);
+      final newProduct = await _productService.addProduct(product);
       _products.insert(0, newProduct);
 
-      // Update categories if new
       if (product.category.isNotEmpty &&
           !_categories.contains(product.category)) {
         _categories.add(product.category);
@@ -168,15 +150,9 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  // Update product
   Future<void> updateProduct(Product updatedProduct) async {
     try {
-      await _firestore
-          .collection('products')
-          .doc(updatedProduct.id)
-          .update(
-            updatedProduct.copyWith(updatedAt: DateTime.now()).toFirestore(),
-          );
+      await _productService.updateProduct(updatedProduct);
 
       final index = _products.indexWhere((p) => p.id == updatedProduct.id);
       if (index != -1) {
@@ -185,14 +161,13 @@ class ProductsProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error updating product: $e');
-      throw Exception('Erreur lors de la mise à jour du produit');
+      throw Exception('Erreur lors de la mise Ã  jour du produit');
     }
   }
 
-  // Delete product
   Future<void> deleteProduct(String productId) async {
     try {
-      await _firestore.collection('products').doc(productId).delete();
+      await _productService.deleteProduct(productId);
       _products.removeWhere((p) => p.id == productId);
       notifyListeners();
     } catch (e) {
@@ -201,7 +176,6 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  // Get product by ID
   Product? getProductById(String id) {
     try {
       return _products.firstWhere((product) => product.id == id);
@@ -210,139 +184,17 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  // Listen to real-time updates
-  void startListeningToProducts() {
-    _productsSubscription?.cancel();
-    _productsSubscription = _firestore
-        .collection('products')
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _products = snapshot.docs.map((doc) {
-              return Product.fromFirestore(doc.data(), doc.id);
-            }).toList();
-
-            _categories = [
-              'Tout',
-              ..._products
-                  .map((p) => p.category)
-                  .toSet()
-                  .where((c) => c.isNotEmpty),
-            ];
-
-            notifyListeners();
-          },
-          onError: (error) {
-            _error = 'Erreur de connexion: $error';
-            notifyListeners();
-            debugPrint('Realtime error: $error');
-          },
-        );
-  }
-
-  // Seed initial data (for development)
+  // Seed initial data (for development via backend)
   Future<void> seedInitialData() async {
     try {
-      final batch = _firestore.batch();
-
-      final initialProducts = [
-        {
-          'name': 'Nike Air Max 270',
-          'description':
-              'Le confort ultime avec la technologie Air Max révolutionnaire.',
-          'price': 199.99,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-          'images': [
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-            'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
-          ],
-          'sizes': ['39', '40', '41', '42', '43', '44', '45'],
-          'colors': ['Noir', 'Blanc', 'Rouge'],
-          'category': 'Running',
-          'brand': 'Nike',
-          'rating': 4.5,
-          'reviewCount': 128,
-          'inStock': true,
-          'stockQuantity': 25,
-          'createdAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
-        },
-        {
-          'name': 'Adidas Ultraboost 22',
-          'description': 'Conçu pour les coureurs qui exigent le meilleur.',
-          'price': 189.99,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-          'images': [
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-            'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
-          ],
-          'sizes': ['38', '39', '40', '41', '42', '43', '44'],
-          'colors': ['Noir', 'Blanc', 'Bleu'],
-          'category': 'Running',
-          'brand': 'Adidas',
-          'rating': 4.7,
-          'reviewCount': 95,
-          'inStock': true,
-          'stockQuantity': 18,
-          'createdAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
-        },
-        {
-          'name': 'Puma RS-X³',
-          'description': 'Style urbain rétro avec technologie moderne.',
-          'price': 149.99,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
-          'images': [
-            'https://images.unsplash.com/photo-1512374382149-4332c6c021f1',
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-          ],
-          'sizes': ['37', '38', '39', '40', '41', '42', '43'],
-          'colors': ['Multicolore', 'Noir', 'Blanc'],
-          'category': 'Street',
-          'brand': 'Puma',
-          'rating': 4.3,
-          'reviewCount': 67,
-          'inStock': true,
-          'stockQuantity': 12,
-          'createdAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
-        },
-        {
-          'name': 'Nike Air Jordan 1',
-          'description': 'L\'icône du basketball qui a révolutionné le sport.',
-          'price': 299.99,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1597043530274-07e0c40e0c8b',
-          'images': [
-            'https://images.unsplash.com/photo-1597043530274-07e0c40e0c8b',
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff',
-            'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
-          ],
-          'sizes': ['40', '41', '42', '43', '44', '45', '46'],
-          'colors': ['Rouge', 'Noir', 'Blanc'],
-          'category': 'Basket',
-          'brand': 'Nike',
-          'rating': 4.8,
-          'reviewCount': 203,
-          'inStock': true,
-          'stockQuantity': 8,
-          'createdAt': Timestamp.now(),
-          'updatedAt': Timestamp.now(),
-        },
-      ];
-
-      for (final productData in initialProducts) {
-        final docRef = _firestore.collection('products').doc();
-        batch.set(docRef, productData);
+      final initialProducts = _getDemoProducts();
+      for (final product in initialProducts) {
+        try {
+          await _productService.addProduct(product);
+        } catch (e) {
+          debugPrint('Error seeding product: $e');
+        }
       }
-
-      await batch.commit();
       debugPrint('Initial data seeded successfully');
     } catch (e) {
       debugPrint('Error seeding data: $e');

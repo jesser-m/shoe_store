@@ -84,7 +84,7 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                           label: Text(label),
                           selected: selected,
                           onSelected: (_) => provider.setFilter(value),
-                          selectedColor: Colors.deepPurple.withOpacity(0.15),
+                          selectedColor: Colors.deepPurple.withValues(alpha: 0.15),
                           checkmarkColor: Colors.deepPurple,
                           labelStyle: TextStyle(
                             color: selected ? Colors.deepPurple : Colors.grey.shade700,
@@ -208,7 +208,7 @@ class _OrderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _statusColor(order.status).withOpacity(0.12),
+                      color: _statusColor(order.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(_statusLabel(order.status), style: TextStyle(color: _statusColor(order.status), fontWeight: FontWeight.bold)),
@@ -239,7 +239,7 @@ class _OrderCard extends StatelessWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(item.productImage, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.image)),
+                          child: Image.network(item.productImage, width: 50, height: 50, fit: BoxFit.cover, errorBuilder: (_, _, _) => const Icon(Icons.image)),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -256,7 +256,7 @@ class _OrderCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('x${item.quantity}', style: TextStyle(color: Colors.grey.shade600)),
-                            Text('${(item.price * item.quantity).toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('${(item.price * item.quantity).toStringAsFixed(2)} â‚¬', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ],
                         ),
                       ],
@@ -267,7 +267,7 @@ class _OrderCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text('Total', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text('${order.totalAmount.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepPurple)),
+                  Text('${order.totalAmount.toStringAsFixed(2)} â‚¬', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.deepPurple)),
                 ],
               ),
             ],
@@ -284,7 +284,7 @@ class _OrderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)],
       ),
       child: InkWell(
         onTap: () => _showOrderDetail(context),
@@ -298,7 +298,7 @@ class _OrderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple.withOpacity(0.1),
+                      color: Colors.deepPurple.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.receipt_long, color: Colors.deepPurple, size: 22),
@@ -319,7 +319,7 @@ class _OrderCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text('${order.totalAmount.toStringAsFixed(2)} €', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                      Text('${order.totalAmount.toStringAsFixed(2)} â‚¬', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                       Text('${order.items.length} article(s)', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                     ],
                   ),
@@ -332,7 +332,7 @@ class _OrderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _statusColor(order.status).withOpacity(0.12),
+                      color: _statusColor(order.status).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(_statusLabel(order.status), style: TextStyle(color: _statusColor(order.status), fontSize: 12, fontWeight: FontWeight.w600)),

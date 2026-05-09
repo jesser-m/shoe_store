@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart' hide Category;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/category.dart';
+import '../services/category_service.dart';
 
 class CategoryProvider with ChangeNotifier {
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  final CategoryService _categoryService = CategoryService();
 
   List<Category> _categories = [];
   bool _isLoading = false;
@@ -19,14 +19,8 @@ class CategoryProvider with ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      final snapshot = await _firestore
-          .collection('categories')
-          .orderBy('sortOrder')
-          .get();
-
-      _categories = snapshot.docs
-          .map((doc) => Category.fromFirestore(doc))
-          .toList();
+      final categoriesList = await _categoryService.getCategories();
+      _categories = categoriesList;
 
       _isLoading = false;
       notifyListeners();
@@ -41,10 +35,8 @@ class CategoryProvider with ChangeNotifier {
 
   Future<void> addCategory(Category category) async {
     try {
-      final docRef = await _firestore
-          .collection('categories')
-          .add(category.toFirestore());
-      _categories.add(category.copyWith(id: docRef.id));
+      final newCategory = await _categoryService.addCategory(category);
+      _categories.add(newCategory);
       notifyListeners();
     } catch (e) {
       debugPrint('Error adding category: $e');
@@ -54,10 +46,7 @@ class CategoryProvider with ChangeNotifier {
 
   Future<void> updateCategory(Category updated) async {
     try {
-      await _firestore
-          .collection('categories')
-          .doc(updated.id)
-          .update(updated.toFirestore());
+      await _categoryService.updateCategory(updated);
       final idx = _categories.indexWhere((c) => c.id == updated.id);
       if (idx != -1) {
         _categories[idx] = updated;
@@ -65,13 +54,13 @@ class CategoryProvider with ChangeNotifier {
       }
     } catch (e) {
       debugPrint('Error updating category: $e');
-      throw Exception('Erreur lors de la mise à jour');
+      throw Exception('Erreur lors de la mise Ã  jour');
     }
   }
 
   Future<void> deleteCategory(String id) async {
     try {
-      await _firestore.collection('categories').doc(id).delete();
+      await _categoryService.deleteCategory(id);
       _categories.removeWhere((c) => c.id == id);
       notifyListeners();
     } catch (e) {

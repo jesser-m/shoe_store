@@ -114,7 +114,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${widget.product.price.toStringAsFixed(2)} €',
+                        '${widget.product.price.toStringAsFixed(2)} â‚¬',
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -247,7 +247,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   _buildReview(
                     'Alice',
                     5,
-                    'Superbes chaussures, très confortables !',
+                    'Superbes chaussures, trÃ¨s confortables !',
                   ),
                   _buildReview('Bob', 4, 'Bon rapport qualité-prix.'),
                   _buildReview('Charlie', 5, 'Je recommande vivement.'),

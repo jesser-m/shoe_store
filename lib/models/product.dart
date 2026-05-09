@@ -1,4 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+DateTime? _parseDate(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  return null;
+}
 
 class Product {
   final String id;
@@ -40,36 +45,29 @@ class Product {
   }) : createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
 
-  // Create Product from Firestore document
-  factory Product.fromFirestore(Map<String, dynamic> data, String id) {
+  factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: id,
-      name: data['name'] ?? '',
-      description: data['description'] ?? '',
-      price: (data['price'] ?? 0.0).toDouble(),
-      imageUrl: data['imageUrl'] ?? '',
-      images: List<String>.from(data['images'] ?? []),
-      sizes: List<String>.from(data['sizes'] ?? []),
-      colors: List<String>.from(data['colors'] ?? []),
-      category: data['category'] ?? '',
-      brand: data['brand'] ?? '',
-      rating: (data['rating'] ?? 0.0).toDouble(),
-      reviewCount: data['reviewCount'] ?? 0,
-      inStock: data['inStock'] ?? true,
-      stockQuantity: data['stockQuantity'] ?? 0,
-      createdAt: data['createdAt'] != null
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      updatedAt: data['updatedAt'] != null
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      isFavorite: false, // This will be set by FavoritesProvider
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      price: (json['price'] ?? 0.0).toDouble(),
+      imageUrl: json['imageUrl'] ?? '',
+      images: List<String>.from(json['images'] ?? []),
+      sizes: List<String>.from(json['sizes'] ?? []),
+      colors: List<String>.from(json['colors'] ?? []),
+      category: json['category'] ?? '',
+      brand: json['brand'] ?? '',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
+      inStock: json['inStock'] ?? true,
+      stockQuantity: json['stockQuantity'] ?? 0,
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updatedAt']) ?? DateTime.now(),
     );
   }
 
-  // Convert Product to Firestore document
-  Map<String, dynamic> toFirestore() {
-    return {
+  Map<String, dynamic> toJson() {
+    final map = {
       'name': name,
       'description': description,
       'price': price,
@@ -83,12 +81,15 @@ class Product {
       'reviewCount': reviewCount,
       'inStock': inStock,
       'stockQuantity': stockQuantity,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
+    if (id.isNotEmpty) {
+      map['_id'] = id;
+    }
+    return map;
   }
 
-  // Create a copy with updated fields
   Product copyWith({
     String? id,
     String? name,

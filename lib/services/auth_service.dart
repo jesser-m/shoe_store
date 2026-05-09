@@ -8,6 +8,7 @@ class AuthService {
     String email,
     String password, {
     String? displayName,
+    String? phone,
   }) async {
     try {
       final response = await ApiService.post(
@@ -17,6 +18,7 @@ class AuthService {
           'email': email,
           'password': password,
           'displayName': displayName ?? email.split('@')[0],
+          'phone': phone,
         },
         auth: false,
       );
@@ -97,10 +99,38 @@ class AuthService {
     await ApiService.deleteToken();
   }
 
-  // Reset password (mock - backend can be extended)
-  Future<void> resetPassword(String email) async {
-    // In a full implementation, call backend endpoint
-    throw UnimplementedError('Reset password requires backend implementation');
+  // Request password reset code via phone
+  Future<String?> requestPasswordResetCode(String email, String phone) async {
+    try {
+      final response = await ApiService.post(
+        '/auth/reset-password/request',
+        body: {'email': email, 'phone': phone},
+        auth: false,
+      );
+      final data = ApiService.handleResponse(response);
+      return data['devCode']; // Return dev code for easy testing
+    } catch (e) {
+      throw 'Erreur: $e';
+    }
+  }
+
+  // Verify code and set new password
+  Future<void> verifyPasswordResetCode(String email, String phone, String code, String newPassword) async {
+    try {
+      final response = await ApiService.post(
+        '/auth/reset-password/verify',
+        body: {
+          'email': email,
+          'phone': phone,
+          'code': code,
+          'newPassword': newPassword,
+        },
+        auth: false,
+      );
+      ApiService.handleResponse(response);
+    } catch (e) {
+      throw 'Erreur: $e';
+    }
   }
 
   // Delete account

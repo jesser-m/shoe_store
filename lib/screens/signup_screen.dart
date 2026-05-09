@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _phoneController = TextEditingController();
   String? _errorMessage;
 
   @override
@@ -21,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -31,6 +34,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final error = await authProvider.signUp(
       _emailController.text.trim(),
       _passwordController.text.trim(),
+      phone: _phoneController.text.trim(),
     );
 
     if (error != null) {
@@ -56,9 +60,13 @@ class _SignupScreenState extends State<SignupScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7FF),
       appBar: AppBar(
-        title: const Text('Inscription'),
+        title: Text('Inscription', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: const Color(0xFF1A1A2E),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -71,22 +79,22 @@ class _SignupScreenState extends State<SignupScreen> {
                 const Icon(
                   Icons.person_add,
                   size: 80,
-                  color: Colors.blue,
+                  color: Colors.deepPurple,
                 ),
                 const SizedBox(height: 24),
-                const Text(
+                Text(
                   'Créer un compte',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: const Color(0xFF1A1A2E),
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Rejoignez Shoe Store',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 16,
                     color: Colors.black54,
                   ),
@@ -113,6 +121,16 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Numéro de téléphone',
+                    prefixIcon: Icon(Icons.phone),
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: _passwordController,
                   decoration: const InputDecoration(
                     labelText: 'Mot de passe',
@@ -125,7 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       return 'Veuillez entrer votre mot de passe';
                     }
                     if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
+                      return 'Le mot de passe doit contenir au moins 6 caractÃ¨res';
                     }
                     return null;
                   },
@@ -168,10 +186,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 ElevatedButton(
                   onPressed: authProvider.isLoading ? null : _signup,
                   style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
+                    elevation: 4,
+                    shadowColor: Colors.deepPurple.withValues(alpha: 0.4),
                   ),
                   child: authProvider.isLoading
                       ? const SizedBox(
@@ -182,9 +204,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'S\'inscrire',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                 ),
                 const SizedBox(height: 16),
@@ -192,9 +214,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   onPressed: () {
                     Navigator.of(context).pop(); // Go back to login
                   },
-                  child: const Text(
+                  child: Text(
                     'Déjà un compte ? Se connecter',
-                    style: TextStyle(color: Colors.blue),
+                    style: GoogleFonts.inter(color: Colors.deepPurple, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

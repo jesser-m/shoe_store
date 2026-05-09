@@ -1,4 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+DateTime? _parseDate(dynamic value) {
+  if (value == null) return null;
+  if (value is DateTime) return value;
+  if (value is String) return DateTime.tryParse(value);
+  return null;
+}
 
 class Order {
   final String id;
@@ -25,34 +30,41 @@ class Order {
     this.notes,
   });
 
-  factory Order.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+
+
+  factory Order.fromJson(Map<String, dynamic> json) {
+    // Backend uses 'products', Flutter model used 'items'
+    var itemsList = json['items'] ?? json['products'];
+    
     return Order(
-      id: doc.id,
-      userId: data['userId'] ?? '',
-      items: (data['items'] as List<dynamic>?)
-          ?.map((item) => OrderItem.fromMap(item))
-          .toList() ?? [],
-      totalAmount: (data['totalAmount'] ?? 0.0).toDouble(),
-      status: data['status'] ?? 'pending',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: data['updatedAt'] != null ? (data['updatedAt'] as Timestamp).toDate() : null,
-      paymentIntentId: data['paymentIntentId'],
-      shippingAddress: data['shippingAddress'] != null
-          ? ShippingAddress.fromMap(data['shippingAddress'])
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      userId: (json['user'] is Map) ? json['user']['_id']?.toString() ?? '' : json['user']?.toString() ?? '',
+      items:
+          (itemsList as List<dynamic>?)
+              ?.map((item) => OrderItem.fromMap(item))
+              .toList() ??
+          [],
+      totalAmount: (json['totalAmount'] ?? 0.0).toDouble(),
+      status: json['status'] ?? 'pending',
+      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDate(json['updatedAt']),
+      paymentIntentId: json['paymentIntentId'] ?? json['paymentId'],
+      shippingAddress: json['shippingAddress'] != null
+          ? ShippingAddress.fromMap(json['shippingAddress'])
           : null,
-      notes: data['notes'],
+      notes: json['notes'],
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toJson() {
     return {
+      '_id': id,
       'userId': userId,
       'items': items.map((item) => item.toMap()).toList(),
       'totalAmount': totalAmount,
       'status': status,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'paymentIntentId': paymentIntentId,
       'shippingAddress': shippingAddress?.toMap(),
       'notes': notes,
@@ -106,10 +118,24 @@ class OrderItem {
   });
 
   factory OrderItem.fromMap(Map<String, dynamic> map) {
+    // Backend returns 'product' as either an ID or an object (if populated)
+    var prodData = map['product'] ?? map['productId'];
+    String pId = '';
+    String pName = map['productName'] ?? '';
+    String pImage = map['productImage'] ?? '';
+
+    if (prodData is Map) {
+      pId = prodData['_id']?.toString() ?? '';
+      pName = prodData['name']?.toString() ?? pName;
+      pImage = prodData['imageUrl']?.toString() ?? pImage;
+    } else {
+      pId = prodData?.toString() ?? '';
+    }
+
     return OrderItem(
-      productId: map['productId'] ?? '',
-      productName: map['productName'] ?? '',
-      productImage: map['productImage'] ?? '',
+      productId: pId,
+      productName: pName,
+      productImage: pImage,
       price: (map['price'] ?? 0.0).toDouble(),
       quantity: map['quantity'] ?? 1,
       size: map['size'],

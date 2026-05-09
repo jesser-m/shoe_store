@@ -173,12 +173,12 @@ class _AdminSidebar extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: selected
-                      ? Colors.deepPurple.withOpacity(0.3)
+                      ? Colors.deepPurple.withValues(alpha: 0.3)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: selected
                       ? Border.all(
-                          color: Colors.deepPurple.withOpacity(0.6),
+                          color: Colors.deepPurple.withValues(alpha: 0.6),
                           width: 0.5,
                         )
                       : null,
@@ -313,7 +313,7 @@ class _DashboardHome extends StatelessWidget {
         '${products.products.where((p) => p.inStock).length} en stock',
       ),
       _KpiData(
-        'Livrées',
+        'Livrés',
         '${orders.deliveredCount}',
         Icons.local_shipping_outlined,
         Colors.green,
@@ -343,7 +343,7 @@ class _DashboardHome extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -391,8 +391,9 @@ class _DashboardHome extends StatelessWidget {
                             showTitles: true,
                             getTitlesWidget: (value, meta) {
                               final i = value.toInt();
-                              if (i < 0 || i >= entries.length)
+                              if (i < 0 || i >= entries.length) {
                                 return const SizedBox.shrink();
+                              }
                               return Text(
                                 entries[i].key,
                                 style: const TextStyle(fontSize: 10),
@@ -482,7 +483,7 @@ class _DashboardHome extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -515,7 +516,7 @@ class _DashboardHome extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -593,7 +594,7 @@ class _OrderRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.12),
+              color: statusColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -630,7 +631,7 @@ class _KpiCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
@@ -647,7 +648,7 @@ class _KpiCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: data.color.withOpacity(0.1),
+                  color: data.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(data.icon, color: data.color, size: 18),

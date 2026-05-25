@@ -20,12 +20,16 @@ import './screens/login_screen.dart';
 import './config/stripe_config.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import './l10n/app_localizations.dart';
+import './config/api_config.dart';
 
 // Only import Stripe for mobile platforms
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Init API config (read saved server IP)
+  await ApiConfig.init();
 
   // Initialize Stripe (Mobile only)
   if (!kIsWeb) {
@@ -317,7 +321,10 @@ class _InnerHomeScreenState extends State<HomeScreen> {
 
         if (productsProvider.isLoading && productsProvider.products.isEmpty) {
           return Scaffold(
-            appBar: AppBar(title: Text(context.tr('app_title')), centerTitle: true),
+            appBar: AppBar(
+              title: Text(context.tr('app_title')),
+              centerTitle: true,
+            ),
             body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -467,7 +474,9 @@ class _InnerHomeScreenState extends State<HomeScreen> {
                     final category = productsProvider.categories[i];
                     final selected = category == selectedCategory;
                     return ChoiceChip(
-                      label: Text(category == 'Tout' ? context.tr('all') : category),
+                      label: Text(
+                        category == 'Tout' ? context.tr('all') : category,
+                      ),
                       selected: selected,
                       selectedColor: colorScheme.primary,
                       backgroundColor: Colors.grey[200],
